@@ -271,7 +271,18 @@ impl NetConfig {
     }
 
     fn default_device() -> String {
-        "lo".to_string()
+        // TODO detect default device via `ip route`
+        let device = Command::new("sh")
+            .args(
+                &[
+                    "-c",
+                    "ip -oneline route list default | sed -rn \"s/.*dev (\\w+).*/\\1/p\"",
+                ],
+            )
+            .output()
+            .block_error("net", "Failed to determine default device")
+            //.unwrap_or("lo"); TODO figure out how to default if Option<Result> is error
+        String::from_utf8_lossy(&device.stdout).to_string().trim_end().to_string()
     }
 
     fn default_hide_inactive() -> bool {
